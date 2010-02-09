@@ -1,0 +1,32 @@
+require 'redgreen'
+require 'autotest/timestamp'
+
+module Autotest::GnomeNotify
+  def self.notify title, msg, img
+    system "notify-send '#{title}' '#{msg}' -i #{img} -t 3000"
+  end
+
+  Autotest.add_hook :ran_command do |at|
+    image_root = "~/.autotest_images"
+    results = [at.results].flatten.join("\n")
+    results.gsub!(/\\e\[\d+m/,'')
+    output = results.slice(/(\d+)\sexamples?,\s(\d+)\sfailures?/)
+    if output
+      if $~[2].to_i > 0
+        notify "FAIL", "#{output}", "#{image_root}/fail.png"
+      else
+        notify "Pass", "#{output}", "#{image_root}/pass.png"
+      end
+    end
+  end
+
+end
+
+class Autotest::Rspec
+
+  def make_test_cmd(files_to_test)
+    return '' if files_to_test.empty?
+    return "spec -c #{files_to_test.keys.flatten.join(' ')}#{add_options_if_present}"
+  end
+end
+
